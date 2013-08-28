@@ -46,7 +46,7 @@
 
 (** {6 Definitions and basics} *)
 
-type +'a t
+type +'a t = ('a, exn) Core.Std.Result.t Async.Std.Deferred.t
   (** The type of threads returning a result of type ['a]. *)
 
 val return : 'a -> 'a t
@@ -275,7 +275,7 @@ val wakeup_later_exn : 'a u -> exn -> unit
 val waiter_of_wakener : 'a u -> 'a t
   (** Returns the thread associated to a wakener. *)
 
-type +'a result
+type +'a result = ('a, exn) Core.Std.Result.t
   (** Either a value of type ['a], either an exception. *)
 
 val make_value : 'a -> 'a result
@@ -444,10 +444,3 @@ val apply : ('a -> 'b t) -> 'a -> 'b t
       (* [apply f e] apply the function [f] to the expression [e].  If
          an exception is raised during this application, it is caught
          and the resulting thread fails with this exception. *)
-(* Q: Could be called 'glue' or 'trap' or something? *)
-
-val backtrace_bind : (exn -> exn) -> 'a t -> ('a -> 'b t) -> 'b t
-val backtrace_catch : (exn -> exn) -> (unit -> 'a t) -> (exn -> 'a t) -> 'a t
-val backtrace_try_bind : (exn -> exn) -> (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
-val backtrace_finalize : (exn -> exn) -> (unit -> 'a t) -> (unit -> unit t) -> 'a t
-

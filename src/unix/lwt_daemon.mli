@@ -29,7 +29,7 @@ val daemonize :
   ?stderr : [ `Dev_null | `Close | `Keep | `Log_default | `Log of Lwt_log.logger ] ->
   ?directory : string ->
   ?umask : [ `Keep | `Set of int ] ->
-  unit -> unit
+  unit -> [ `Not_supported_by_Lwt_Async ]
   (** Put the current running process into daemon mode. I.e. it forks
       and exit the parent, detach it from its controlling terminal,
       and redict standard intputs/outputs..

@@ -54,7 +54,7 @@ let have = function
   | `fd_passing -> <:optcomp< HAVE_FD_PASSING >>
   | `get_credentials -> <:optcomp< HAVE_GET_CREDENTIALS >>
   | `fdatasync -> <:optcomp< HAVE_FDATASYNC >>
-  | `libev -> <:optcomp< HAVE_LIBEV >>
+  | `libev -> false
 
 type byte_order = Little_endian | Big_endian
 

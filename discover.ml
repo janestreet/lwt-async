@@ -28,9 +28,7 @@ open Printf
    | Search path                                                     |
    +-----------------------------------------------------------------+ *)
 
-(* List of search paths for header files, mostly for MacOS
-   users. libev is installed by port systems into non-standard
-   locations by default on MacOS.
+(* List of search paths for header files, mostly for MacOS users.
 
    We use a hardcorded list of path + the ones from C_INCLUDE_PATH and
    LIBRARY_PATH.
@@ -90,17 +88,6 @@ let pthread_code = "
 CAMLprim value lwt_test()
 {
   pthread_create(0, 0, 0, 0);
-  return Val_unit;
-}
-"
-
-let libev_code = "
-#include <caml/mlvalues.h>
-#include <ev.h>
-
-CAMLprim value lwt_test()
-{
-  ev_default_loop(0);
   return Val_unit;
 }
 "
@@ -226,14 +213,12 @@ CAMLprim value lwt_test()
 let ocamlc = ref "ocamlc"
 let ext_obj = ref ".o"
 let exec_name = ref "a.out"
-let use_libev = ref true
 let use_glib = ref false
 let use_pthread = ref true
 let use_unix = ref true
 let os_type = ref "Unix"
 let android_target = ref false
 let ccomp_type = ref "cc"
-let libev_default = ref true
 
 let log_file = ref ""
 let caml_file = ref ""
@@ -405,14 +390,12 @@ let () =
     "-ocamlc", Arg.Set_string ocamlc, "<path> ocamlc";
     "-ext-obj", Arg.Set_string ext_obj, "<ext> C object files extension";
     "-exec-name", Arg.Set_string exec_name, "<name> name of the executable produced by ocamlc";
-    "-use-libev", arg_bool use_libev, " whether to check for libev";
     "-use-glib", arg_bool use_glib, " whether to check for glib";
     "-use-pthread", arg_bool use_pthread, " whether to use pthread";
     "-use-unix", arg_bool use_unix, " whether to build lwt.unix";
     "-os-type", Arg.Set_string os_type, "<name> type of the target os";
     "-android-target", arg_bool android_target, "<name> compiles for Android";
     "-ccomp-type", Arg.Set_string ccomp_type, "<ccomp-type> C compiler type";
-    "-libev_default", arg_bool libev_default, " whether to use the libev backend by default";
   ] in
   Arg.parse args ignore "check for external C libraries and available features\noptions are:";
 
@@ -440,31 +423,13 @@ let () =
   let setup_data = ref [] in
 
   (* Test for pkg-config. *)
-  test_feature ~do_check:(!use_libev || !use_glib) "pkg-config" ""
+  test_feature ~do_check:!use_glib "pkg-config" ""
     (fun () ->
        ksprintf Sys.command "pkg-config --version > %s 2>&1" !log_file = 0);
 
   (* Not having pkg-config is not fatal. *)
   let have_pkg_config = !not_available = [] in
   not_available := [];
-
-  let test_libev () =
-    let opt, lib =
-      lib_flags "LIBEV"
-        (fun () ->
-          match if have_pkg_config then pkg_config_flags "libev" else None with
-            | Some (opt, lib) ->
-                (opt, lib)
-            | None ->
-                match search_header "ev.h" with
-                  | Some (dir_i, dir_l) ->
-                      (["-I" ^ dir_i], ["-L" ^ dir_l; "-lev"])
-                  | None ->
-                      ([], ["-lev"]))
-    in
-    setup_data := ("libev_opt", opt) :: ("libev_lib", lib) :: !setup_data;
-    test_code (opt, lib) libev_code
-  in
 
   let test_pthread () =
     let opt, lib =
@@ -495,7 +460,6 @@ let () =
     test_code (opt, lib) glib_code
   in
 
-  test_feature ~do_check:!use_libev "libev" "HAVE_LIBEV" test_libev;
   test_feature ~do_check:!use_pthread "pthread" "HAVE_PTHREAD" test_pthread;
   test_feature ~do_check:!use_glib "glib" "" test_glib;
 
@@ -507,13 +471,6 @@ The following recquired C libraries are missing: %s.
 Please install them and retry. If they are installed in a non-standard location
 or need special flags, set the environment variables <LIB>_CLFAGS and <LIB>_LIBS
 accordingly and retry.
-
-For example, if libev is installed in /opt/local, you can type:
-
-export LIBEV_CLFAGS=-I/opt/local/include
-export LIBEV_LIBS=-L/opt/local/lib
-
-To compile without libev support, use ./configure --disable-libev ...
 " (String.concat ", " !not_available);
     exit 1
   end;
@@ -576,18 +533,11 @@ Lwt can use pthread or the win32 API.
   end else begin
     output_string config_ml "#let android=false\n"
   end;
-  if !libev_default then begin
-    output_string config_ml "#let libev_default=true\n"
-  end else begin
-    output_string config_ml "#let libev_default=false\n"
-  end;
 
   fprintf config "#endif\n";
 
   (* Our setup.data keys. *)
   let setup_data_keys = [
-    "libev_opt";
-    "libev_lib";
     "pthread_lib";
     "pthread_opt";
     "glib_opt";

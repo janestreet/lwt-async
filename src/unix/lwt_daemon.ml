@@ -48,42 +48,6 @@ let redirect_output dev_null fd mode = match mode with
       redirect fd (Some logger)
 
 let daemonize ?(syslog=true) ?(stdin=`Dev_null) ?(stdout=`Log_default) ?(stderr=`Log_default) ?(directory="/") ?(umask=`Set 0o022) () =
-  if Unix.getppid () = 1 then
-    (* If our parent is [init], then we already are a demon *)
-    ()
-  else begin
-    Unix.chdir directory;
-
-    (* Exit the parent, and continue in the child: *)
-    if Lwt_unix.fork () > 0 then begin
-      (* Do not run exit hooks in the parent. *)
-      Lwt_sequence.iter_node_l Lwt_sequence.remove Lwt_main.exit_hooks;
-      exit 0
-    end;
-
-    if syslog then Lwt_log.default := Lwt_log.syslog ~facility:`Daemon ();
-
-    (* Redirection of standard IOs *)
-    let dev_null = Unix.openfile "/dev/null" [Unix.O_RDWR] 0o666 in
-    begin match stdin with
-      | `Dev_null ->
-          Unix.dup2 dev_null Unix.stdin
-      | `Close ->
-          Unix.close Unix.stdin
-      | `Keep ->
-          ()
-    end;
-    redirect_output dev_null Unix.stdout stdout;
-    redirect_output dev_null Unix.stderr stderr;
-    Unix.close dev_null;
-
-    begin match umask with
-      | `Keep ->
-          ()
-      | `Set n ->
-          ignore (Unix.umask n);
-    end;
-
-    ignore (Unix.setsid ())
-  end
+  (* Depends on [Lwt_unix.fork] which isn't supported with Async. *)
+  Lwt_unix.fork ()
 

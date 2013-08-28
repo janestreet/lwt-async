@@ -22,7 +22,7 @@ Homepage: http://ocsigen.org/lwt/
 BuildTools: ocamlbuild
 Plugins: DevFiles (0.3), META (0.3)
 XDevFilesEnableMakefile: false
-PostConfCommand: ocaml discover.ml -ocamlc $ocamlc -ext-obj $ext_obj -exec-name $default_executable_name -use-libev $libev -os-type $os_type -use-glib $glib -ccomp-type $ccomp_type -use-pthread $pthread -use-unix $unix -android-target $android_target -libev_default $libev_default
+PostConfCommand: ocaml discover.ml -ocamlc $ocamlc -ext-obj $ext_obj -exec-name $default_executable_name -os-type $os_type -use-glib $glib -ccomp-type $ccomp_type -use-pthread $pthread -use-unix $unix -android-target $android_target
 PostDistCleanCommand: $rm src/unix/lwt_config.h src/unix/lwt_config.ml src/unix/lwt_unix_jobs_generated.ml src/unix/jobs-unix/*
 
 Synopsis: Lightweight thread library for Objective Caml
@@ -81,14 +81,6 @@ Flag toplevel
   Description: Enhanced toplevel
   Default$: flag(all)
 
-Flag libev
-  Description: Compile with libev support
-  Default$: !os_type(Win32) && !flag(android_target)
-
-Flag libev_default
-  Description: Use the libev backend by default
-  Default$: system(linux) || system(linux_elf) || system(linux_aout) || system(linux_eabi) || system(linux_eabihf)
-
 Flag pthread
   Description: Use pthread
   Default$: !os_type(Win32)
@@ -118,6 +110,7 @@ Library "lwt"
     Lwt_switch,
     Lwt_util,
     Lwt_pqueue
+  BuildDepends: async, threads
   XMETADescription: Lightweight thread library for OCaml (core library)
 
 Library "lwt-log"
@@ -146,17 +139,16 @@ Library "lwt-unix"
     Lwt_timeout,
     Lwt_unix,
     Lwt_sys,
-    Lwt_engine,
     Lwt_bytes
   InternalModules:
     Lwt_unix_jobs_generated
-  BuildDepends: lwt, lwt.log, unix, bigarray
+  BuildDepends: lwt, lwt.log, unix, bigarray, core, sexplib.syntax, threads, async
+  XMETARequires: lwt, lwt.log, unix, bigarray, core, threads, async
   XMETADescription: Unix support for lwt
   CSources:
     lwt_config.h,
     lwt_unix.h,
     lwt_unix_stubs.c,
-    lwt_libev_stubs.c,
     lwt_process_stubs.c,
     jobs-unix/lwt_unix_job_access.c,
     jobs-unix/lwt_unix_job_chdir.c,

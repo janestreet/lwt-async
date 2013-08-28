@@ -230,16 +230,7 @@ val abort : file_descr -> exn -> unit
 
 (** {6 Process handling} *)
 
-val fork : unit -> int
-  (** [fork ()] does the same as [Unix.fork]. You must use this
-      function instead of [Unix.fork] when you want to use Lwt in the
-      child process.
-
-      Notes:
-      - in the child process all pending jobs are canceled,
-      - if you are going to use Lwt in the parent and the child, it is
-        a good idea to call {!Lwt_io.flush_all} before callling
-        {!fork} to avoid double-flush. *)
+val fork : unit -> [ `Not_supported_by_Lwt_Async ]
 
 type process_status =
     Unix.process_status =
@@ -644,7 +635,7 @@ val on_signal_full : int -> (signal_handler_id -> int -> unit) -> signal_handler
 val disable_signal_handler : signal_handler_id -> unit
   (** Stops receiving this signal *)
 
-val signal_count : unit -> int
+val signal_count : unit -> [ `Not_supported_by_Lwt_Async ]
   (** Returns the number of registered signal handler. *)
 
 val reinstall_signal_handler : int -> unit
@@ -1144,17 +1135,17 @@ val set_notification : int -> (unit -> unit) -> unit
     {!Async_switch}, Lwt will launch system threads to execute
     blocking system calls asynchronously. *)
 
-val pool_size : unit -> int
+val pool_size : unit -> [ `Not_supported_by_Lwt_Async ]
   (** Maximum number of system threads that can be started. If this
       limit is reached, jobs will be executed synchronously. *)
 
-val set_pool_size : int -> unit
+val set_pool_size : int -> [ `Not_supported_by_Lwt_Async ]
   (** Change the size of the pool. *)
 
-val thread_count : unit -> int
+val thread_count : unit -> [ `Not_supported_by_Lwt_Async ]
   (** The number of system threads running (excluding this one). *)
 
-val thread_waiting_count : unit -> int
+val thread_waiting_count : unit -> [ `Not_supported_by_Lwt_Async ]
   (** The number threads waiting for a job. *)
 
 (** {6 CPUs} *)

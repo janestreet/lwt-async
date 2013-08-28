@@ -104,7 +104,6 @@ let () =
                 disabled. *)
              if BaseEnvLight.var_get "unix" env = "true" then begin
                define_c_library "glib" env;
-               define_c_library "libev" env;
                define_c_library "pthread" env;
 
                flag ["c"; "compile"; "use_lwt_headers"] & S [A"-ccopt"; A"-Isrc/unix"];

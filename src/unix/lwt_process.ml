@@ -181,7 +181,7 @@ let map_args args =
 
 let spawn (prog, args) env ?(stdin:redirection=`Keep) ?(stdout:redirection=`Keep) ?(stderr:redirection=`Keep) toclose =
   let prog = if prog = "" && Array.length args > 0 then args.(0) else prog in
-  match Lwt_unix.fork () with
+  match Unix.fork () with
     | 0 ->
         redirect Unix.stdin stdin;
         redirect Unix.stdout stdout;

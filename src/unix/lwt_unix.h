@@ -34,9 +34,6 @@
 #  define FD_val(value) Int_val(value)
 #endif
 
-/* Macro to extract a libev loop from a caml value. */
-#define Ev_loop_val(value) *(struct ev_loop**)Data_custom_val(value)
-
 /* +-----------------------------------------------------------------+
    | Utils                                                           |
    +-----------------------------------------------------------------+ */
@@ -56,13 +53,6 @@ char *lwt_unix_strdup(char *string);
 
 /* Raise [Lwt_unix.Not_available]. */
 void lwt_unix_not_available(char const *feature) Noreturn;
-
-/* +-----------------------------------------------------------------+
-   | Notifications                                                   |
-   +-----------------------------------------------------------------+ */
-
-/* Sends a notification for the given id. */
-void lwt_unix_send_notification(int id);
 
 /* +-----------------------------------------------------------------+
    | Threading                                                       |
@@ -124,43 +114,8 @@ void lwt_unix_condition_wait(lwt_unix_condition *condition, lwt_unix_mutex *mute
    | Detached jobs                                                   |
    +-----------------------------------------------------------------+ */
 
-/* How job are executed. */
-enum lwt_unix_async_method {
-  /* Synchronously. */
-  LWT_UNIX_ASYNC_METHOD_NONE = 0,
-
-  /* Asynchronously, on another thread. */
-  LWT_UNIX_ASYNC_METHOD_DETACH = 1,
-
-  /* Asynchronously, on the main thread, switcing to another thread if
-     necessary. */
-  LWT_UNIX_ASYNC_METHOD_SWITCH = 2
-};
-
-/* Type of job execution modes. */
-typedef enum lwt_unix_async_method lwt_unix_async_method;
-
-/* State of a job. */
-enum lwt_unix_job_state {
-  /* The job has not yet started. */
-  LWT_UNIX_JOB_STATE_PENDING,
-
-  /* The job is running. */
-  LWT_UNIX_JOB_STATE_RUNNING,
-
-  /* The job is done. */
-  LWT_UNIX_JOB_STATE_DONE
-};
-
 /* A job descriptor. */
 struct lwt_unix_job {
-  /* The next job in the queue. */
-  struct lwt_unix_job *next;
-
-  /* Id used to notify the main thread in case the job do not
-     terminate immediatly. */
-  int notification_id;
-
   /* The function to call to do the work.
 
      This function must not:
@@ -176,21 +131,6 @@ struct lwt_unix_job {
 
      It has been introduced in Lwt 2.3.3. */
   value (*result)(struct lwt_unix_job *job);
-
-  /* State of the job. */
-  enum lwt_unix_job_state state;
-
-  /* Is the main thread still waiting for the job ? */
-  int fast;
-
-  /* Mutex to protect access to [state] and [fast]. */
-  lwt_unix_mutex mutex;
-
-  /* Thread running the job. */
-  lwt_unix_thread thread;
-
-  /* The async method in used by the job. */
-  lwt_unix_async_method async_method;
 };
 
 /* Type of job descriptors. */
