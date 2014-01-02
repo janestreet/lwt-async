@@ -31,7 +31,6 @@ open Async.Std
 module Ivar = Async_core.Raw_ivar
 module Handler = Async_core.Raw_handler
 module Scheduler = Async_core.Raw_scheduler
-module Unregister = Async_core.Unregister
 
 type +'a t = ('a, exn) Result.t Deferred.t
 type -'a u
@@ -376,20 +375,18 @@ let wrap7 f x y z a b c d =
 (* Inspired from async/core/lib/deferred.ml:enabled' *)
 let gather' choices ~compute =
   let ivar = Ivar.create () in
-  let unregisters = Stack.create () in
+  let unregisters = ref [] in
   let run value =
     if Ivar.is_empty ivar then (
-      Stack.iter unregisters ~f:Unregister.unregister ;
+      List.iter !unregisters ~f:(fun (ivar, h) -> Ivar.remove_handler ivar h);
       Ivar.fill ivar (compute value choices)
     )
   in
   List.iter choices ~f:(fun choice ->
-    let handler = { Handler.
-      execution_context = Scheduler.(current_execution_context (t ())) ;
-      run ;
-    } in
-    let unregister = Ivar.install_removable_handler choice handler in
-    Stack.push unregisters unregister
+    let h =
+      Ivar.add_handler choice run Scheduler.(current_execution_context (t ()))
+    in
+    unregisters := (choice, h) :: !unregisters
   ) ;
   Ivar.upon ivar (
     function

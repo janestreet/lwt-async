@@ -327,7 +327,7 @@ let rec register_action ev t f =
   let open Async.Std (* we don't want to use Lwt combinators... *) in
   let kind = match ev with Read -> `Read | Write -> `Write in
   let interrupt = Deferred.ignore (Ivar.read t.aborted) in
-  Deferred.bind (Fd.ready_to_interruptible ~interrupt t.fd kind) begin function
+  Deferred.bind (Fd.interruptible_ready_to ~interrupt t.fd kind) begin function
   | `Ready  ->
     begin try
       return (Ok (f ()))
@@ -1445,7 +1445,7 @@ let accept_interruptible t ~interrupt =
       set_close_on_exec t;
       return (`Finished (`Ok (t, sockaddr)))
     | `Error (U.Unix_error (_ , _, _)) ->
-      Fd.ready_to_interruptible t.fd `Read ~interrupt
+      Fd.interruptible_ready_to t.fd `Read ~interrupt
       >>| (function
       | `Ready -> `Repeat ()
       | `Interrupted as x -> `Finished x
@@ -1501,7 +1501,7 @@ let connect_interruptible t sockaddr ~interrupt =
   | `Already_closed -> fail_closed ()
   | `Ok () -> Deferred.return (success ())
   | `Error (Unix.Unix_error ((Unix.EINPROGRESS | Unix.EINTR), _, _)) as e -> begin
-    Fd.ready_to_interruptible t.fd `Write ~interrupt
+    Fd.interruptible_ready_to t.fd `Write ~interrupt
     >>| function
     | `Closed -> fail_closed ()
     | `Bad_fd -> failwiths "connect on bad file descriptor" t.fd <:sexp_of< Fd.t >>
